@@ -5,13 +5,18 @@ const weather = localStorage.hasOwnProperty('weather') ? JSON.parse(localStorage
 const outputHTML = document.getElementById('output'); // тег для вывода информации
 const cityHTML =  document.getElementById('city');
 const submit = document.getElementById('submit');
+const debug = true; // Включение отладки
 
-function createOptionsSelector(resp){
-    const cities = cityList(resp);
-    //console.log(cities[1]);
+const rusLetters=new Map(); // Русские символы для сверки названий городов (для идиотского API)
+"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ абвгдеёжзийклмнопрстуфхцчшщьыъэюя".split('').forEach((char) => {
+    rusLetters.set(char,char.codePointAt(0))
+});
 
-    // Заполняем список стран для подсказки в инпутах
-    cities.forEach((cityObj, cityNum) => {
+function createOptionsSelector(resp) {
+    const cities = GenerateCityList(resp);
+    debug && console.log('Загружено городов', cities.length);
+    // Заполняем список городов для работы инпута
+    cities.forEach((cityObj) => {
         const option = document.createElement('option');
         option.value = cityObj.name;
         citiesListHTML.appendChild(option);
@@ -30,6 +35,7 @@ const APIoptions = {
 	}
 };
 
+debug && console.log('Идёт загрузка городов');
 // Загрузка списка городов с географическими координатами через API
 // TODO заменить нафиг этот сервис - треть городов нету, треть с орфографическими ошибками
 try {
@@ -37,27 +43,19 @@ try {
         .then(response => response.json())
         .then(response => createOptionsSelector(response[0]))
         .catch(err => errorLoadingCities() );
-} catch (error) {
+ } catch (error) {
     errorLoadingCities();
 }
 
-function errorLoadingCities(){
+function errorLoadingCities() {
     // TODO убрать innerHTML
-    document.getElementById('form').innerHTML = ('<h1>Произошла сетевая ошибка</h1>'+
-    'При загрузке городов и их координат произошла сетевая ошибка.<br>'+
+    debug && console.log('Ошибка загрузки городов');
+    document.getElementById('form').innerHTML = ('<h1>Произошла ошибка</h1>'+
+    'При загрузке городов и их координат произошла ошибка.<br>'+
     'Прогноз погоды предоставить невозможно<br><br><b><a href="#">Обновите страницу</b>');
 }
 
-const rusLetters=new Map(); // Русские символы для сверки названий городов
-"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ абвгдеёжзийклмнопрстуфхцчшщьыъэюя".split('').forEach((char) => {
-    rusLetters.set(char,char.codePointAt(0))
-});
-
-
-
-function cityList(response){
-    //data =  JSON.parse(JSON.stringify(response));
-
+function GenerateCityList(response) {
     for (const key in response) {
         if (response[key].level.slice(0,3) == "ADM" || response[key].population < 10000) {
             // отбрасываем административные единицы (не города) и пункты с населением менее 10тыс
@@ -71,7 +69,7 @@ function cityList(response){
             let rusLng = true;
             if(cityName){
                 for (const char of cityName) {
-                    if (!rusLetters.has(char)){
+                    if (!rusLetters.has(char)) {
                         rusLng = false;
                         continue;
                     }
@@ -97,7 +95,7 @@ function cityList(response){
     return cities;
 }
 
-async function LoadWether(cityIndex){
+async function LoadWether(cityIndex) {
     const APIoptions = {
         method: 'GET',
         headers: {
@@ -112,18 +110,18 @@ async function LoadWether(cityIndex){
 
         if (!weatherJSON || !weatherJSON.data) {
             outputHTML.innerHTML = 'Ошибка получения погоды. Проблема API';
-            console.log('Ошибка API');
+            debug && console.log('Ошибка API');
         } else {
             // Получили результат - записали в сторадж
             weather[cityIndex] = weatherJSON;
             localStorage.setItem('weather', JSON.stringify(weather));
             outputHTML.innerHTML += '<br>Данные получены';
-            console.log('Погода пришла');
+            debug && console.log('Погода пришла');
         }
     } catch (err) {
         // TODO  сделать ошибку по-человечески, сделать несколько попыток запроса погоды
         outputHTML.innerHTML = 'Ошибка получения погоды. Сетевая проблема';
-        console.log('Сетевая ошибка');
+        cdebug && onsole.log('Сетевая ошибка');
     }
 }
 
@@ -132,13 +130,14 @@ form.addEventListener('submit', async (event) => {
     cityHTML.disabled = true;
     submit.disabled = true;
     outputHTML.innerHTML = '';
-    console.log('Начинаем обработку');
+    debug && console.log('Начинаем обработку');
     const cityIndex = cities.findIndex(el => el.name == cityHTML.value)
-    console.log('Индекс города', cityIndex);
+    debug && console.log('Индекс города', cityIndex);
     if (cityIndex !== -1) {
   
-        if(!weather[cityIndex]){
+        if (!weather[cityIndex]) {
             // Погоду ранее не получали, значит надо идти на сервер
+            debug && console.log('Идём за погодой на сервер');
             await LoadWether(cityIndex);
         }
 
@@ -159,9 +158,9 @@ form.addEventListener('submit', async (event) => {
         html = '<h3>Прогноз погоды по городу <span style="color:blue">' + cities[cityIndex].name + '</span></h3>';
         if (!weather[cityIndex] || !weather[cityIndex].data) {
             html += '<b style="color:red">Прогноз недоступен, попробуйте узнать погоду ещё раз</b>';
-            console.log('Погоды нету');
+            debug && console.log('Погоды нету');
         } else {
-            console.log('Погода есть, рисуем таблицу');
+            debug &&  console.log('Погода есть, рисуем таблицу');
             html += '<table border=1><tr>';
             for (const field in fields) {
                 html += '\n<th>' + fields[field] + '</th>';
@@ -170,7 +169,7 @@ form.addEventListener('submit', async (event) => {
             for (currentWeather of weather[cityIndex].data) {
                 html += '\n<tr style="text-align:center;">';
                 for (const field in fields) {
-                    if(field.indexOf('.')==-1) {
+                    if (field.indexOf('.')==-1) {
                         html += "\n<td>" + currentWeather[field] + "</td>";
                     } else {
                         const subfields = field.split('.');
