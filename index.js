@@ -55,7 +55,7 @@ function errorLoadingCities() {
     'Прогноз погоды предоставить невозможно<br><br><b><a href="#">Обновите страницу</b>');
 }
 
-function GenerateCityList(response) {
+function generateCityList(response) {
     for (const key in response) {
         if (response[key].level.slice(0,3) == "ADM" || response[key].population < 10000) {
             // отбрасываем административные единицы (не города) и пункты с населением менее 10тыс
@@ -95,7 +95,7 @@ function GenerateCityList(response) {
     return cities;
 }
 
-async function LoadWether(cityIndex) {
+async function loadWether(cityIndex) {
     const APIoptions = {
         method: 'GET',
         headers: {
