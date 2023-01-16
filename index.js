@@ -121,7 +121,7 @@ async function loadWether(cityIndex) {
     } catch (err) {
         // TODO  сделать ошибку по-человечески, сделать несколько попыток запроса погоды
         outputHTML.innerHTML = 'Ошибка получения погоды. Сетевая проблема';
-        cdebug && onsole.log('Сетевая ошибка');
+        debug && console.log('Сетевая ошибка');
     }
 }
 
@@ -138,7 +138,7 @@ form.addEventListener('submit', async (event) => {
         if (!weather[cityIndex]) {
             // Погоду ранее не получали, значит надо идти на сервер
             debug && console.log('Идём за погодой на сервер');
-            await LoadWether(cityIndex);
+            await loadWether(cityIndex);
         }
 
         // Получены все данные. Рисуем прогноз погоды.
