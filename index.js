@@ -1,19 +1,19 @@
-let data=[];
 const citiesListHTML = document.getElementById('citiesList');
 const cities = []; // список городов
 const weather = localStorage.hasOwnProperty('weather') ? JSON.parse(localStorage.getItem('weather')) : []; // Главный массив погоды
 const outputHTML = document.getElementById('output'); // тег для вывода информации
-const cityHTML =  document.getElementById('city');
+const cityHTML = document.getElementById('city');
 const submit = document.getElementById('submit');
+const form = document.getElementById('form');
 const debug = true; // Включение отладки
 
-const rusLetters=new Map(); // Русские символы для сверки названий городов (для идиотского API)
-"АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ абвгдеёжзийклмнопрстуфхцчшщьыъэюя".split('').forEach((char) => {
-    rusLetters.set(char,char.codePointAt(0))
+const rusLetters = new Map(); // Русские символы для сверки названий городов (для идиотского API)
+'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ абвгдеёжзийклмнопрстуфхцчшщьыъэюя'.split('').forEach((char) => {
+    rusLetters.set(char, char.codePointAt(0));
 });
 
 function createOptionsSelector(resp) {
-    const cities = GenerateCityList(resp);
+    const cities = generateCityList(resp);
     debug && console.log('Загружено городов', cities.length);
     // Заполняем список городов для работы инпута
     cities.forEach((cityObj) => {
@@ -28,11 +28,11 @@ submit.disabled = true;
 
 // Настройки для API-сервера
 const APIoptions = {
-	method: 'GET',
-	headers: {
-		'X-RapidAPI-Key': '64e6599f99msh772610806e4b56ep19a156jsnd6d623b769f8',
-		'X-RapidAPI-Host': 'city-list.p.rapidapi.com'
-	}
+    method: 'GET',
+    headers: {
+        'X-RapidAPI-Key': '64e6599f99msh772610806e4b56ep19a156jsnd6d623b769f8',
+        'X-RapidAPI-Host': 'city-list.p.rapidapi.com',
+    },
 };
 
 debug && console.log('Идёт загрузка городов');
@@ -40,25 +40,27 @@ debug && console.log('Идёт загрузка городов');
 // TODO заменить нафиг этот сервис - треть городов нету, треть с орфографическими ошибками
 try {
     fetch('https://city-list.p.rapidapi.com/api/getCity/ru', APIoptions)
-        .then(response => response.json())
-        .then(response => createOptionsSelector(response[0]))
-        .catch(err => errorLoadingCities() );
- } catch (error) {
+        .then((response) => response.json())
+        .then((response) => createOptionsSelector(response[0]))
+        .catch((err) => errorLoadingCities());
+} catch (error) {
     errorLoadingCities();
 }
 
 function errorLoadingCities() {
     // TODO убрать innerHTML
     debug && console.log('Ошибка загрузки городов');
-    document.getElementById('form').innerHTML = ('<h1>Произошла ошибка</h1>'+
-    'При загрузке городов и их координат произошла ошибка.<br>'+
-    'Прогноз погоды предоставить невозможно<br><br><b><a href="#">Обновите страницу</b>');
+    form.innerHTML =
+        '<h1>Произошла ошибка</h1>' +
+        'При загрузке городов и их координат произошла ошибка.<br>' +
+        'Прогноз погоды предоставить невозможно<br><br><b><a href="#">Обновите страницу</b>';
 }
 
 function generateCityList(response) {
     for (const key in response) {
-        if (response[key].level.slice(0,3) == "ADM" || response[key].population < 10000) {
+        if (response[key].level.slice(0, 3) === 'ADM' || response[key].population < 10000) {
             // отбрасываем административные единицы (не города) и пункты с населением менее 10тыс
+            // eslint-disable-next-line no-continue
             continue;
         }
 
@@ -67,10 +69,11 @@ function generateCityList(response) {
         // (сервер английские, русские и даже китайские вперемешку шлёт)
         for (const cityName of JSON.parse(response[key].alternames)) {
             let rusLng = true;
-            if(cityName){
+            if (cityName) {
                 for (const char of cityName) {
                     if (!rusLetters.has(char)) {
                         rusLng = false;
+                        // eslint-disable-next-line no-continue
                         continue;
                     }
                 }
@@ -82,11 +85,11 @@ function generateCityList(response) {
         }
 
         cities.push({
-            name : cityNameRu, // + " " + response[key].level,
-            lat : response[key].lat,
-            long : response[key].long,
-            population : response[key].population,
-        })
+            name: cityNameRu, // + " " + response[key].level,
+            lat: response[key].lat,
+            long: response[key].long,
+            population: response[key].population,
+        });
     }
 
     cityHTML.disabled = false;
@@ -100,12 +103,14 @@ async function loadWether(cityIndex) {
         method: 'GET',
         headers: {
             'X-RapidAPI-Key': '64e6599f99msh772610806e4b56ep19a156jsnd6d623b769f8',
-            'X-RapidAPI-Host': 'weatherbit-v1-mashape.p.rapidapi.com'
-        }
-    };    
+            'X-RapidAPI-Host': 'weatherbit-v1-mashape.p.rapidapi.com',
+        },
+    };
     try {
-        const response = await fetch('https://weatherbit-v1-mashape.p.rapidapi.com/forecast/3hourly?'+
-            'lat=' + cities[cityIndex].lat + '&lon=' + cities[cityIndex].long + '&lang=ru', APIoptions).catch(err => console.error(err));;
+        const response = await fetch(
+            `https://weatherbit-v1-mashape.p.rapidapi.com/forecast/3hourly?lat=${cities[cityIndex].lat}&lon=${cities[cityIndex].long}&lang=ru`,
+            APIoptions
+        ).catch((err) => console.error(err));
         const weatherJSON = await response.json();
 
         if (!weatherJSON || !weatherJSON.data) {
@@ -131,58 +136,61 @@ form.addEventListener('submit', async (event) => {
     submit.disabled = true;
     outputHTML.innerHTML = '';
     debug && console.log('Начинаем обработку');
-    const cityIndex = cities.findIndex(el => el.name == cityHTML.value)
+    // eslint-disable-next-line eqeqeq
+    const cityIndex = cities.findIndex((el) => el.name == cityHTML.value);
     debug && console.log('Индекс города', cityIndex);
     if (cityIndex !== -1) {
-  
         if (!weather[cityIndex]) {
             // Погоду ранее не получали, значит надо идти на сервер
             debug && console.log('Идём за погодой на сервер');
             await loadWether(cityIndex);
         }
-
         // Получены все данные. Рисуем прогноз погоды.
 
         // Поля для итерации
         const fields = {
-            'timestamp_local': 'Дата/время (местные)',
-            'temp' : 'Температура',
-            'app_temp' : 'Ощущается как',
-            'wind_cdir_full' : 'Направление ветра',
-            'wind_spd' : 'Скорость ветра',
-            'weather.description' : 'Явления',
-            'clouds' : 'Процент облачности'
+            // eslint-disable-next-line camelcase
+            timestamp_local: 'Дата/время (местные)',
+            temp: 'Температура',
+            // eslint-disable-next-line camelcase
+            app_temp: 'Ощущается как',
+            // eslint-disable-next-line camelcase
+            wind_cdir_full: 'Направление ветра',
+            // eslint-disable-next-line camelcase
+            wind_spd: 'Скорость ветра',
+            'weather*description': 'Явления',
+            clouds: 'Процент облачности',
         };
 
         // TODO  сделать вывод по-человечески, а не через innerHTML
-        html = '<h3>Прогноз погоды по городу <span style="color:blue">' + cities[cityIndex].name + '</span></h3>';
+        let html = `<h3>Прогноз погоды по городу <span style="color:blue">${cities[cityIndex].name}</span></h3>`;
         if (!weather[cityIndex] || !weather[cityIndex].data) {
             html += '<b style="color:red">Прогноз недоступен, попробуйте узнать погоду ещё раз</b>';
             debug && console.log('Погоды нету');
         } else {
-            debug &&  console.log('Погода есть, рисуем таблицу');
+            debug && console.log('Погода есть, рисуем таблицу');
             html += '<table border=1><tr>';
             for (const field in fields) {
-                html += '\n<th>' + fields[field] + '</th>';
+                html += `\n<th>${fields[field]}</th>`;
             }
-            html += "</tr>";
-            for (currentWeather of weather[cityIndex].data) {
+            html += '</tr>';
+            for (const currentWeather of weather[cityIndex].data) {
                 html += '\n<tr style="text-align:center;">';
                 for (const field in fields) {
-                    if (field.indexOf('.')==-1) {
-                        html += "\n<td>" + currentWeather[field] + "</td>";
+                    if (field.indexOf('*') === -1) {
+                        html += `\n<td>${currentWeather[field]}</td>`;
                     } else {
-                        const subfields = field.split('.');
-                        html += "\n<td>" + currentWeather[subfields[0]][subfields[1]] + "</td>";
+                        const subfields = field.split('*');
+                        html += `\n<td>${currentWeather[subfields[0]][subfields[1]]}</td>`;
                     }
                 }
-                html += "\n</tr>";
+                html += '\n</tr>';
             }
-            html += "\n</table>";
+            html += '\n</table>';
         }
 
         outputHTML.innerHTML = html;
         cityHTML.disabled = false;
-        submit.disabled = false;        
+        submit.disabled = false;
     }
-})
+});

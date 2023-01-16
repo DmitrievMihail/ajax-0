@@ -38,3 +38,5 @@ yarn-error.log
 yarn.lock
 yarn.lock
 
+.eslintrc.js
+.prettierrc.js
