@@ -41,3 +41,7 @@ yarn.lock
 
 .eslintrc.js
 .prettierrc.js
+package.json
+
+
+dist
