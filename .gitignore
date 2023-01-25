@@ -32,9 +32,16 @@ Desktop.ini
 package-lock.json
 
 build
+dist
 node_modules
 githooks
 yarn-error.log
 yarn.lock
 yarn.lock
 
+.eslintrc.js
+.prettierrc.js
+package.json
+
+
+dist
